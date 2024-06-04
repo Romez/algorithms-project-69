@@ -13,3 +13,10 @@ test('search docs', () => {
   const docs = [doc1, doc2, doc3];
   expect(search(docs, 'shoot')).toEqual(['doc1', 'doc2']);
 });
+
+test('search term', () => {
+  const doc1 = { id: 'doc1', text: "I can't shoot straight unless I've had a pint!" };
+  const docs = [doc1];
+  expect(search(docs, 'pint')).toEqual(['doc1']);
+  expect(search(docs, 'pint!')).toEqual(['doc1']);
+});
