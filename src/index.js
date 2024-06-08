@@ -1,6 +1,10 @@
-const tokenize = (text) => text.toLowerCase().match(/\b\w+\b/g);
+const tokenize = (text) => text.toLowerCase().match(/\w+/g);
 
 const search = (docs, query) => {
+  const docsCount = docs.length;
+  if (docsCount === 0) {
+    return [];
+  }
   const reverseIndex = {}; // {term: [docId, ...]}
   const termInDocIndex = {}; // {docId: {term: N}}
   const termsCountInDoc = {}; // {docId: N}
@@ -33,7 +37,6 @@ const search = (docs, query) => {
       const tf = termCountInDoc / docSize;
 
       const termCount = reverseIndex[term].size;
-      const docsCount = docs.length;
       const idf = Math.log(1 + (docsCount - termCount + 1) / (termCount + 0.5));
       weights[id] = (weights[id] || 0) + (tf * idf);
     });

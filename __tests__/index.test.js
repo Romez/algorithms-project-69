@@ -16,8 +16,9 @@ const getDocumentText = async (id) => {
   return { id, text };
 };
 
-test('search empty', () => {
-  expect(search([], 'shoot')).toEqual([]);
+test('search with empty', async () => {
+  const result = await search([], '');
+  expect(result).toHaveLength(0);
 });
 
 test('search term', () => {
