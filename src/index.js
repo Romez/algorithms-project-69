@@ -1,50 +1,62 @@
-const tokenize = (str) => str.match(/\w+/g).map((s) => s.toLowerCase());
+const tokenize = (text) => text.toLowerCase().match(/\w+/g).map((s) => s.toLowerCase());
 
 const search = (docs, query) => {
+  if (docs.length === 0) {
+    return [];
+  }
   const index = {};
   const weights = {};
+  const stats = {};
 
-  for (let i = 0; i < docs.length; i += 1) {
-    const doc = docs[i];
-    const { id, text } = doc;
-    const docTerms = tokenize(text);
-    for (let j = 0; j < docTerms.length; j += 1) {
-      const term = docTerms[j];
-
+  docs.forEach(({ id, text }) => {
+    const terms = tokenize(text);
+    terms.forEach((term) => {
       if (!index[term]) {
         index[term] = new Set();
       }
       index[term].add(id);
 
+      if (!stats[term]) {
+        stats[term] = {};
+      }
+
+      if (!stats[term][id]) {
+        stats[term][id] = { total: terms.length, count: 0 };
+      }
+
+      stats[term][id].count += 1;
+    });
+  });
+
+  Object.keys(stats).forEach((term) => {
+    Object.keys(stats[term]).forEach((id) => {
+      const termStats = stats[term][id];
+      const tf = termStats.count / termStats.total;
+
+      const termCount = index[term].size;
+      const docsCount = docs.length;
+      const idf = Math.log2(1 + (docsCount - termCount + 1) / (termCount + 0.5));
+
       if (!weights[term]) {
-        weights[term] = {};
+        weights[term] = 0;
       }
-
-      if (!weights[term][id]) {
-        weights[term][id] = 0;
-      }
-
-      weights[term][id] += 1;
-    }
-  }
+      weights[term] = Math.max(weights[term], tf * idf);
+    });
+  });
 
   const queryTerms = tokenize(query);
 
-  const termDocs = queryTerms.reduce((acc, term) => {
-    if (!index[term]) {
-      return acc;
-    }
-
-    return Array.from(index[term]).reduce((currAcc, id) => {
-      const weight = weights[term][id];
-      if (!currAcc[id] || currAcc[id] < weight) {
-        return { ...currAcc, [id]: weight };
+  const docsWithTerm = queryTerms.reduce((acc, term) => {
+    index[term].forEach((id) => {
+      if (!acc[id]) {
+        acc[id] = 0;
       }
-      return currAcc;
-    }, acc);
+      acc[id] += weights[term];
+    });
+    return acc;
   }, {});
 
-  const items = Object.entries(termDocs);
+  const items = Object.entries(docsWithTerm);
 
   items.sort((a, b) => (b[1] - a[1]));
 
